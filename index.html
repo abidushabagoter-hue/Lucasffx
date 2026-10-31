@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>lucasffx - Painel</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            overflow-x: hidden;
+            height: 100vh;
+        }
+
+        /* ================= TELA DE LOGIN ================= */
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999; background: #0a0000; transition: opacity 0.5s ease;
+        }
+        #particles-js { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: -1; }
+        .login-box {
+            background: rgba(20, 5, 5, 0.8); padding: 30px; border-radius: 20px;
+            width: 85%; max-width: 350px; border: 1px solid rgba(255, 0, 0, 0.3);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.1); backdrop-filter: blur(10px); text-align: center;
+        }
+        .login-box h2 { margin-bottom: 20px; color: #ff3333; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
+        .login-box input {
+            width: 100%; padding: 15px; background: #1a1a1a; border: 1px solid #333;
+            border-radius: 12px; color: #fff; font-size: 16px; margin-bottom: 15px; outline: none; transition: border 0.3s;
+        }
+        .login-box input:focus { border-color: #ff0000; }
+        .login-box button {
+            width: 100%; padding: 15px; background: #cc0000; color: #fff; border: none;
+            border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s;
+        }
+        .login-box button:active { transform: scale(0.98); background: #990000; }
+        .error-msg { color: #ff4444; font-size: 12px; margin-top: 10px; display: none; }
+
+        /* ================= ESTRUTURA PRINCIPAL ================= */
+        #main-panel { display: none; flex-direction: column; height: 100vh; padding-bottom: 10px; overflow-y: auto; }
+        .screen { display: none; flex-direction: column; flex: 1; animation: fadeIn 0.3s ease; }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ================= TELA DE FUNÇÕES ================= */
+        .banner {
+            height: 200px; width: 100%; background-image: url('https://images.unsplash.com/photo-1522383225653-ed111181a951?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80');
+            background-size: cover; background-position: center; border-bottom-left-radius: 25px; border-bottom-right-radius: 25px; position: relative;
+        }
+        .banner::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.6)); border-bottom-left-radius: 25px; border-bottom-right-radius: 25px;
+        }
+        .functions-container { padding: 20px; flex: 1; }
+        .title { font-size: 22px; font-weight: 700; letter-spacing: 1px; margin-bottom: 20px; text-transform: uppercase; }
+
+        /* Cartões */
+        .card {
+            background: #121212; border-radius: 16px; padding: 16px 20px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid #222; transition: border 0.3s; cursor: pointer;
+        }
+        .card.active { border: 1px solid rgba(255, 0, 0, 0.6); background: #1a0a0a; }
+        .card-text { flex: 1; padding-right: 15px; }
+        .card-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+        .card-desc { font-size: 12px; color: #888; line-height: 1.4; }
+
+        /* Switch Customizado */
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        .card.active .slider { background-color: #cc0000; }
+        .card.active .slider:before { transform: translateX(22px); }
+
+        /* ================= TELA DE CARREGAMENTO (INJETANDO) ================= */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: rgba(0, 0, 0, 0.95); z-index: 10000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .spinner {
+            width: 60px; height: 60px; border: 4px solid rgba(255, 0, 0, 0.2);
+            border-top: 4px solid #cc0000; border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { font-size: 18px; font-weight: 600; color: #fff; letter-spacing: 1px; margin-bottom: 10px;}
+        .loading-sub { font-size: 12px; color: #ff3333; margin-top: 5px; font-family: monospace; text-align: center; padding: 0 20px;}
+
+        /* ================= TELA DE CONFIG ================= */
+        .config-container { padding: 20px; padding-top: 40px; }
+        .config-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
+        .config-profile { display: flex; align-items: center; gap: 15px; }
+        .config-avatar { width: 50px; height: 50px; border-radius: 50%; background-image: url('https://images.unsplash.com/photo-1522383225653-ed111181a951?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'); background-size: cover; background-position: center; }
+        .config-time-info p { font-size: 12px; color: #888; }
+        .config-time-info h2 { font-size: 20px; font-weight: 700; margin-top: 2px; }
+        .config-actions { display: flex; gap: 10px; }
+        .icon-btn { width: 40px; height: 40px; border-radius: 50%; background: #1a1a1a; border: 1px solid #333; display: flex; justify-content: center; align-items: center; color: #fff; }
+        .section-title { font-size: 12px; font-weight: 700; color: #888; letter-spacing: 1px; margin-bottom: 10px; text-transform: uppercase; }
+        .config-card { background: #0f0f0f; border-radius: 16px; border: 1px solid #222; padding: 5px 0; margin-bottom: 25px; }
+        .config-item { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #1a1a1a; }
+        .config-item:last-child { border-bottom: none; }
+        .item-icon { width: 24px; height: 24px; margin-right: 15px; fill: #888; }
+        .item-content { flex: 1; }
+        .item-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+        .item-value { font-size: 15px; font-weight: 600; color: #fff; }
+        .item-value.blue { color: #4a7aff; }
+        .eye-btn { width: 35px; height: 35px; border-radius: 50%; background: #1a1a1a; border: 1px solid #333; display: flex; justify-content: center; align-items: center; color: #ccc; cursor: pointer; }
+        .status-card { background: #0f0f0f; border-radius: 16px; border: 1px solid #222; padding: 15px 20px; display: flex; align-items: center; margin-bottom: 25px; }
+        .status-icon { width: 30px; height: 30px; border-radius: 50%; background: #4a7aff; display: flex; justify-content: center; align-items: center; margin-right: 15px; }
+        .status-text { flex: 1; }
+        .status-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+        .status-value { font-size: 18px; font-weight: 700; color: #4a7aff; }
+        .action-btn { width: 100%; padding: 15px; background: #1a1a1a; border: 1px solid #333; border-radius: 12px; color: #fff; font-size: 15px; font-weight: 700; margin-bottom: 10px; cursor: pointer; }
+        .action-btn:active { background: #2a2a2a; }
+
+        /* ================= BARRA INFERIOR ================= */
+        .bottom-bar { padding: 0 20px 20px 20px; margin-top: auto; }
+        .bottom-tabs { background: #1a1a1a; border-radius: 25px; display: flex; padding: 8px; justify-content: space-between; border: 1px solid #222; }
+        .tab-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 18px; color: #888; font-weight: 600; font-size: 14px; border: none; background: transparent; cursor: pointer; transition: all 0.3s; }
+        .tab-btn.active { background: #2a2a2a; color: #fff; }
+        .tab-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen">
+        <div id="particles-js"></div>
+        <div class="login-box">
+            <h2>Lucasffx</h2>
+            <input type="password" id="password-input" placeholder="Digite a senha...">
+            <button onclick="checkPassword()">Entrar</button>
+            <p class="error-msg" id="error-msg">Senha incorreta. Tente novamente.</p>
+        </div>
+    </div>
+
+    <!-- TELA DE CARREGAMENTO (INJETANDO) -->
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loading-text">Injetando no jogo...</div>
+        <div class="loading-sub" id="loading-sub"></div>
+    </div>
+
+    <!-- PAINEL PRINCIPAL -->
+    <div id="main-panel">
+        
+        <!-- ABA 1: FUNÇÕES -->
+        <div id="screen-funcoes" class="screen active">
+            <div class="banner"></div>
+            <div class="functions-container">
+                <h1 class="title">FUNÇÕES</h1>
+
+                <div class="card" id="card-hs" onclick="ativarFuncao('card-hs', 'Hs disfarçado')">
+                    <div class="card-text">
+                        <div class="card-title">Hs disfarçado</div>
+                        <div class="card-desc">aumentar a chance de a mira ficar na região da cabeça.</div>
+                    </div>
+                    <div class="switch"><div class="slider"></div></div>
+                </div>
+
+                <div class="card" id="card-pricison" onclick="ativarFuncao('card-pricison', 'Pricison')">
+                    <div class="card-text">
+                        <div class="card-title">Pricison</div>
+                        <div class="card-desc">Aumenta a precisão do seu celular deixando completamente estável.</div>
+                    </div>
+                    <div class="switch"><div class="slider"></div></div>
+                </div>
+
+                <div class="card" id="card-aimbot" onclick="ativarFuncao('card-aimbot', 'Aimbot')">
+                    <div class="card-text">
+                        <div class="card-title">Aimbot</div>
+                        <div class="card-desc">aumenta a chance de acerto na cabeça.</div>
+                    </div>
+                    <div class="switch"><div class="slider"></div></div>
+                </div>
+
+                <!-- FUNÇÃO CONECTADA À API AIMLOOK -->
+                <div class="card" id="card-aimlock" onclick="ativarFuncao('card-aimlock', 'Aim lock')">
+                    <div class="card-text">
+                        <div class="card-title">Aim lock</div>
+                        <div class="card-desc">deixa sua mira mais calibrada.</div>
+                    </div>
+                    <div class="switch"><div class="slider"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 2: CONFIG -->
+        <div id="screen-config" class="screen">
+            <div class="config-container">
+                <div class="config-header">
+                    <div class="config-profile">
+                        <div class="config-avatar"></div>
+                        <div class="config-time-info">
+                            <p id="current-date">10/31/26, 8:40 AM</p>
+                            <h2>94d 13:20:51</h2>
+                        </div>
+                    </div>
+                    <div class="config-actions">
+                        <button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></button>
+                        <button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+                    </div>
+                </div>
+                <div class="status-card">
+                    <div class="status-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="status-text">
+                        <div class="status-label">Status da conta</div>
+                        <div class="status-value">Ativo</div>
+                    </div>
+                </div>
+                <div class="section-title">LICENÇA</div>
+                <div class="config-card">
+                    <div class="config-item">
+                        <svg class="item-icon" viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+                        <div class="item-content">
+                            <div class="item-label">Key</div>
+                            <div class="item-value" id="key-text">••••••••••••</div>
+                        </div>
+                        <button class="eye-btn" onclick="toggleKey()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                    </div>
+                    <div class="config-item">
+                        <svg class="item-icon" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+                        <div class="item-content"><div class="item-label">Validade</div><div class="item-value">2027-02-03T01:01:44.128</div></div>
+                    </div>
+                </div>
+                <div class="section-title">DISPOSITIVO</div>
+                <div class="config-card">
+                    <div class="config-item">
+                        <svg class="item-icon" viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+                        <div class="item-content"><div class="item-label">Modelo</div><div class="item-value">iPhone</div></div>
+                    </div>
+                    <div class="config-item">
+                        <svg class="item-icon" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/></svg>
+                        <div class="item-content"><div class="item-label">Sistema</div><div class="item-value">iOS 16.7.16</div></div>
+                    </div>
+                </div>
+                <button class="action-btn">Copiar key</button>
+                <button class="action-btn" onclick="logout()">Sair</button>
+            </div>
+        </div>
+
+        <!-- BARRA INFERIOR -->
+        <div class="bottom-bar">
+            <div class="bottom-tabs">
+                <button class="tab-btn active" id="btn-tab-funcoes" onclick="switchTab('funcoes')">
+                    <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/></svg> Funções
+                </button>
+                <button class="tab-btn" id="btn-tab-config" onclick="switchTab('config')">
+                    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.04.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg> Config
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE PARTÍCULAS -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+
+    <script>
+        // =====================================================================
+        // 1. API AIMLOOK ENGINE (Conectada ao código enviado)
+        // =====================================================================
+        const ApiAimLookEngine = {
+            // Dados da injeção
+            pacoteAndroid: "com.dts.freefireth",
+            forcaMira: 60,
+            miraGrudando: true,
+            sensibilidade: true,
+
+            // Classe Java Simulada
+            SensitivityManager: class {
+                constructor(multiplier) {
+                    this.sensitivityMultiplier = multiplier;
+                }
+            },
+
+            // Função principal
+            executarInjecao: function() {
+                console.log(`if aimlook force ${this.forcaMira}%`);
+                console.log(`const string vi: ${this.pacoteAndroid}`);
+                console.log(`AimLook ${this.forcaMira}% Start const mira grudar force ${this.forcaMira}%`);
+                console.log(`const mira force ${this.forcaMira}%`);
+                console.log(`const string v1 ("aimlook mira grudar ${this.forcaMira}% force ")`);
+                console.log(`9999x");`);
+                console.log(`له`); // Caractere original
+                console.log(`)! StartAcitivy (`);
+                console.log(`("mira puxar a cabeça ") Start almlook ${this.forcaMira}%`);
+                console.log(`sensitivity_on { aimlook ${this.forcaMira}`);
+                console.log(`(" mira grudar force ${this.forcaMira}% ") aimlook ${this.forcaMira}%`);
+                console.log(`Start`);
+                console.log(`StartAcitivy { const string v2 (aimlook grudar ${this.forcaMira}% (" force dword:`);
+                
+                // Instanciando a classe SensitivityManager do Java
+                const sensitivity = new this.SensitivityManager(this.forcaMira / 100);
+                console.log(`public class SensitivityManager { private float sensitivityMultiplier; ... }`);
+                console.log(`Multiplier configurado: ${sensitivity.sensitivityMultiplier}`);
+
+                return {
+                    status: "Injetado com Sucesso",
+                    forca: this.forcaMira + "%"
+                };
+            }
+        };
+
+        // --- CONFIGURAÇÃO DO FUNDO DE PARTÍCULAS ---
+        particlesJS("particles-js", {
+            "particles": {
+                "number": { "value": 60, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#ff0000" },
+                "shape": { "type": "circle" },
+                "opacity": { "value": 0.5, "random": true },
+                "size": { "value": 3, "random": true },
+                "line_linked": { "enable": true, "distance": 150, "color": "#ff0000", "opacity": 0.4, "width": 1 },
+                "move": { "enable": true, "speed": 2, "direction": "none", "random": true, "straight": false, "out_mode": "out" }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": { "onhover": { "enable": true, "mode": "grab" }, "onclick": { "enable": true, "mode": "push" } },
+                "modes": { "grab": { "distance": 140, "line_linked": { "opacity": 1 } } }
+            },
+            "retina_detect": true
+        });
+
+        // --- LÓGICA DE LOGIN ---
+        function checkPassword() {
+            const password = document.getElementById('password-input').value;
+            if (password === "HS-LUCASFFX") {
+                document.getElementById('login-screen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('main-panel').style.display = 'flex';
+                    atualizarRelogio();
+                }, 500);
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+                document.getElementById('password-input').value = '';
+            }
+        }
+
+        document.getElementById('password-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') checkPassword();
+        });
+
+        function logout() { window.location.reload(); }
+
+        // --- NAVEGAÇÃO ENTRE ABAS ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            if (tabName === 'funcoes') {
+                document.getElementById('screen-funcoes').classList.add('active');
+                document.getElementById('btn-tab-funcoes').classList.add('active');
+            } else if (tabName === 'config') {
+                document.getElementById('screen-config').classList.add('active');
+                document.getElementById('btn-tab-config').classList.add('active');
+            }
+        }
+
+        // --- LÓGICA DAS FUNÇÕES (EXCLUSIVIDADE E INJEÇÃO) ---
+        let funcaoAtiva = null;
+
+        function ativarFuncao(idCard, nomeFuncao) {
+            const cardClicado = document.getElementById(idCard);
+            
+            if (funcaoAtiva === idCard) {
+                return; 
+            }
+
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.remove('active');
+            });
+
+            cardClicado.classList.add('active');
+            funcaoAtiva = idCard;
+
+            iniciarInjecao(nomeFuncao);
+        }
+
+        function iniciarInjecao(nome) {
+            const loadingScreen = document.getElementById('loading-screen');
+            const loadingText = document.getElementById('loading-text');
+            const loadingSub = document.getElementById('loading-sub');
+            
+            loadingScreen.style.display = 'flex';
+            loadingText.innerText = `Injetando ${nome}...`;
+            loadingSub.innerText = "Iniciando processos...";
+
+            // CONEXÃO DIRETA COM A API NA FUNÇÃO AIM LOCK
+            if (nome === 'Aim lock') {
+                const resultadoApi = ApiAimLookEngine.executarInjecao();
+                
+                setTimeout(() => { loadingSub.innerText = `if aimlook force 60%`; }, 200);
+                setTimeout(() => { loadingSub.innerText = `AimLook 60% Start const mira grudar force 60%`; }, 600);
+                setTimeout(() => { loadingSub.innerText = `("mira puxar a cabeça ") Start almlook 60%`; }, 1000);
+                setTimeout(() => { loadingSub.innerText = `sensitivity_on { aimlook 60`; }, 1400);
+                setTimeout(() => { loadingSub.innerText = `SensitivityManager(0.60) Ativado`; }, 1800);
+                
+            } else if (nome === 'Hs disfarçado') {
+                setTimeout(() => { loadingSub.innerText = `API Conectada...`; }, 500);
+                setTimeout(() => { loadingSub.innerText = `executarAim() Ativado`; }, 1000);
+            } else if (nome === 'Pricison') {
+                setTimeout(() => { loadingSub.innerText = `Precisão Estável...`; }, 500);
+                setTimeout(() => { loadingSub.innerText = `Anti-tremor Ativado`; }, 1000);
+            } else if (nome === 'Aimbot') {
+                setTimeout(() => { loadingSub.innerText = `Aimbot 78%`; }, 500);
+                setTimeout(() => { loadingSub.innerText = `Mira na cabeça`; }, 1000);
+            }
+
+            setTimeout(() => {
+                loadingText.innerText = "Abrindo Free Fire...";
+                loadingSub.innerText = `StartAcitivy const string vi: com.dts.freefireth`;
+                
+                window.location.href = "freefire://";
+                
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 2000);
+
+            }, 2800);
+        }
+
+        // --- FUNÇÕES DA TELA DE CONFIG ---
+        let keyVisible = false;
+        function toggleKey() {
+            const keyElement = document.getElementById('key-text');
+            keyVisible = !keyVisible;
+            keyElement.innerText = keyVisible ? "HS-LUCASFFX-2027" : "••••••••••••";
+        }
+
+        function atualizarRelogio() {
+            const agora = new Date();
+            const dataFormatada = agora.toLocaleDateString('en-US') + ', ' + agora.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('current-date').innerText = dataFormatada;
+        }
+        setInterval(atualizarRelogio, 60000);
+
+    </script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(() => console.log("Service Worker registrado com sucesso!"))
+        .catch((error) => console.error("Erro ao registrar Service Worker:", error));
+    }
+  </script>
+</body>
+</html>
